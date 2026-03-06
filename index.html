@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线图片压缩工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #409eff;
+            background-color: #f8f9fa;
+        }
+
+        .upload-area.active {
+            border-color: #67c23a;
+            background-color: #f0f9eb;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #909399;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            color: #666;
+            font-size: 16px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .settings {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #e4e7ed;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        /* 实时预览大小的提示框 */
+        .size-preview {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e8f4ff;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .preview-size {
+            color: #409eff;
+            font-weight: bold;
+        }
+
+        .preview-save {
+            color: #67c23a;
+            font-weight: bold;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #409eff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #337ecc;
+        }
+
+        button:disabled {
+            background-color: #909399;
+            cursor: not-allowed;
+        }
+
+        .preview {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .preview-title {
+            margin-bottom: 15px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .image-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .image-box {
+            text-align: center;
+        }
+
+        .image-box img {
+            max-width: 300px;
+            max-height: 300px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+
+        .image-info {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .file-size {
+            color: #409eff;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .save-percent {
+            color: #67c23a;
+            font-weight: bold;
+        }
+
+        .progress {
+            margin: 20px 0;
+            height: 8px;
+            background-color: #e4e7ed;
+            border-radius: 4px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #67c23a;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .error {
+            color: #f56c6c;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>在线图片压缩工具</h1>
+
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">点击或拖拽图片到此处上传</div>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="error" id="errorMsg"></div>
+
+        <!-- 压缩设置 -->
+        <div class="settings" id="settingsSection" style="display: none;">
+            <!-- 原图信息展示 -->
+            <div class="size-preview" id="originalSizeInfo">
+                原图信息：大小 <span class="preview-size" id="originalSize">0 B</span> | 分辨率 <span id="originalRes">0 × 0</span>
+            </div>
+            
+            <div class="setting-item">
+                <label for="qualityRange">压缩质量: <span id="qualityValue">80</span>%</label>
+                <input type="range" id="qualityRange" min="10" max="100" value="80">
+            </div>
+            <div class="setting-item">
+                <label for="sizeRange">缩放比例: <span id="sizeValue">100</span>%</label>
+                <input type="range" id="sizeRange" min="10" max="100" value="100">
+            </div>
+            
+            <!-- 实时预览压缩后的大小 -->
+            <div class="size-preview" id="previewSizeInfo">
+                预估压缩后：大小 <span class="preview-size" id="estimatedSize">0 B</span> | 节省空间 <span class="preview-save" id="estimatedSave">0%</span>
+            </div>
+            
+            <button id="compressBtn" disabled>开始压缩</button>
+        </div>
+
+        <!-- 进度条 -->
+        <div class="progress" id="progressBar">
+            <div class="progress-bar" id="progressValue"></div>
+        </div>
+
+        <!-- 预览区域 -->
+        <div class="preview" id="previewSection">
+            <div class="preview-title">压缩对比</div>
+            <div class="image-container">
+                <div class="image-box">
+                    <h3>原图片</h3>
+                    <img id="originalImage" alt="原图片">
+                    <div class="image-info" id="originalInfo"></div>
+                </div>
+                <div class="image-box">
+                    <h3>压缩后</h3>
+                    <img id="compressedImage" alt="压缩后图片">
+                    <div class="image-info" id="compressedInfo"></div>
+                </div>
+            </div>
+            <button id="downloadBtn">下载压缩后的图片</button>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const settingsSection = document.getElementById('settingsSection');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityValue = document.getElementById('qualityValue');
+        const sizeRange = document.getElementById('sizeRange');
+        const sizeValue = document.getElementById('sizeValue');
+        const compressBtn = document.getElementById('compressBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressValue = document.getElementById('progressValue');
+        const previewSection = document.getElementById('previewSection');
+        const originalImage = document.getElementById('originalImage');
+        const compressedImage = document.getElementById('compressedImage');
+        const originalInfo = document.getElementById('originalInfo');
+        const compressedInfo = document.getElementById('compressedInfo');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        
+        // 新增实时预览相关DOM
+        const originalSize = document.getElementById('originalSize');
+        const originalRes = document.getElementById('originalRes');
+        const estimatedSize = document.getElementById('estimatedSize');
+        const estimatedSave = document.getElementById('estimatedSave');
+
+        // 存储选中的图片和压缩后的图片
+        let selectedFile = null;
+        let compressedBlob = null;
+        let originalWidth = 0;
+        let originalHeight = 0;
+        let originalFileSize = 0; // 存储原图大小（字节）
+
+        // 上传区域点击事件
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // 拖拽事件
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('active');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('active');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('active');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 文件选择事件
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleFile(fileInput.files[0]);
+            }
+        });
+
+        // 处理选中的文件
+        function handleFile(file) {
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                showError('请选择有效的图片文件！');
+                return;
+            }
+
+            // 清空错误信息
+            hideError();
+            
+            selectedFile = file;
+            originalFileSize = file.size; // 保存原图大小
+            settingsSection.style.display = 'block';
+            compressBtn.disabled = false;
+
+            // 显示原图片预览
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    originalWidth = img.width;
+                    originalHeight = img.height;
+                    originalImage.src = e.target.result;
+                    
+                    // 更新原图信息展示
+                    originalSize.textContent = formatFileSize(file.size);
+                    originalRes.textContent = `${originalWidth} × ${originalHeight}`;
+                    
+                    // 显示原图片详细信息
+                    originalInfo.innerHTML = `
+                        <div>文件大小: <span class="file-size">${formatFileSize(file.size)}</span></div>
+                        <div>分辨率: ${originalWidth} × ${originalHeight}</div>
+                        <div>格式: ${file.type.split('/')[1].toUpperCase()}</div>
+                    `;
+                    
+                    // 初始化实时预览大小
+                    updateSizePreview();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 格式化文件大小（支持B/KB/MB/GB）
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            else if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            else return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+        }
+
+        // 实时更新预估压缩大小
+        function updateSizePreview() {
+            if (!selectedFile) return;
+            
+            // 获取当前的压缩参数
+            const quality = qualityRange.value / 100;
+            const scale = sizeRange.value / 100;
+            
+            // 预估压缩后的大小（基于质量和缩放的综合计算）
+            // 缩放影响像素数（面积），质量影响每个像素的存储大小
+            const scaleFactor = scale * scale; // 缩放比例的平方（面积比）
+            const estimatedCompressedSize = originalFileSize * quality * scaleFactor;
+            const savePercent = ((1 - estimatedCompressedSize / originalFileSize) * 100).toFixed(2);
+            
+            // 更新预览显示
+            estimatedSize.textContent = formatFileSize(Math.round(estimatedCompressedSize));
+            estimatedSave.textContent = `${savePercent}%`;
+        }
+
+        // 更新压缩质量显示 + 实时预览
+        qualityRange.addEventListener('input', () => {
+            qualityValue.textContent = qualityRange.value;
+            updateSizePreview(); // 实时更新预估大小
+        });
+
+        // 更新缩放比例显示 + 实时预览
+        sizeRange.addEventListener('input', () => {
+            sizeValue.textContent = sizeRange.value;
+            updateSizePreview(); // 实时更新预估大小
+        });
+
+        // 压缩按钮点击事件
+        compressBtn.addEventListener('click', compressImage);
+
+        // 压缩图片核心函数
+        function compressImage() {
+            if (!selectedFile) return;
+
+            // 显示进度条
+            progressBar.style.display = 'block';
+            progressValue.style.width = '0%';
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    // 模拟进度
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += 10;
+                        progressValue.style.width = `${progress}%`;
+                        if (progress >= 100) {
+                            clearInterval(progressInterval);
+                        }
+                    }, 50);
+
+                    // 创建canvas
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // 计算缩放后的尺寸
+                    const scale = sizeRange.value / 100;
+                    const width = Math.round(img.width * scale);
+                    const height = Math.round(img.height * scale);
+
+                    // 设置canvas尺寸
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    // 绘制图片
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // 压缩图片
+                    const quality = qualityRange.value / 100;
+                    canvas.toBlob((blob) => {
+                        compressedBlob = blob;
+                        
+                        // 更新进度到100%
+                        progressValue.style.width = '100%';
+                        
+                        // 显示压缩后的图片
+                        const compressedUrl = URL.createObjectURL(blob);
+                        compressedImage.src = compressedUrl;
+
+                        // 显示压缩后详细信息
+                        const originalSize = formatFileSize(selectedFile.size);
+                        const compressedSize = formatFileSize(blob.size);
+                        const savePercent = ((1 - blob.size / selectedFile.size) * 100).toFixed(2);
+                        
+                        compressedInfo.innerHTML = `
+                            <div>文件大小: <span class="file-size">${compressedSize}</span> (原: ${originalSize})</div>
+                            <div>分辨率: ${width} × ${height}</div>
+                            <div>节省空间: <span class="save-percent">${savePercent}%</span></div>
+                        `;
+
+                        // 显示预览区域
+                        setTimeout(() => {
+                            progressBar.style.display = 'none';
+                            previewSection.style.display = 'block';
+                        }, 500);
+
+                    }, selectedFile.type, quality);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(selectedFile);
+        }
+
+        // 下载按钮点击事件
+        downloadBtn.addEventListener('click', () => {
+            if (!compressedBlob) return;
+
+            // 创建下载链接
+            const url = URL.createObjectURL(compressedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // 设置文件名（保留原文件名，添加_compressed后缀）
+            const originalName = selectedFile.name.split('.').slice(0, -1).join('.');
+            const extension = selectedFile.name.split('.').pop();
+            a.download = `${originalName}_compressed.${extension}`;
+            
+            // 触发下载
+            a.click();
+            
+            // 释放URL对象
+            URL.revokeObjectURL(url);
+        });
+
+        // 显示错误信息
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+        }
+
+        // 隐藏错误信息
+        function hideError() {
+            errorMsg.textContent = '';
+            errorMsg.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
