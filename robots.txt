@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://rick6666666.github.io/image-compressor/sitemap.xml
